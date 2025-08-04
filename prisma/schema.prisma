@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  slug        String       @unique
+  description String?
+  website     String?
+  industry    String?
+  size        CompanySize?
+  country     String?
+  city        String?
+  address     String?
+  phone       String?
+  email       String?
+  logo        String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  courses     Course[]
+  students    Student[]
+
+  @@map("companies")
+}
+
+model Course {
+  id             String          @id @default(cuid())
+  title          String
+  slug           String          @unique
+  description    String?
+  category       CourseCategory?
+  level          CourseLevel?
+  duration       Int?
+  price          Decimal?        @db.Decimal(10, 2)
+  currency       String?         @default("USD")
+  thumbnail      String?
+  isActive       Boolean         @default(true)
+  isPublished    Boolean         @default(false)
+  totalLessons   Int?            @default(0)
+  estimatedHours Int?
+  prerequisites  String[]
+  learningGoals  String[]
+  tags           String[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  companyId      String
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  enrollments    Enrollment[]
+  students       Student[]
+
+  @@map("courses")
+}
+
+model Student {
+  id                String       @id @default(cuid())
+  email             String       @unique
+  firstName         String
+  lastName          String
+  fullName          String
+  phone             String?
+  dateOfBirth       DateTime?
+  gender            Gender?
+  country           String?
+  city              String?
+  timezone          String?
+  avatar            String?
+  bio               String?
+  jobTitle          String?
+  department        String?
+  yearsExperience   Int?
+  skillLevel        SkillLevel?
+  preferredLanguage String?      @default("en")
+  isActive          Boolean      @default(true)
+  isVerified        Boolean      @default(false)
+  lastLoginAt       DateTime?
+  lastActivityAt    DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  companyId         String
+  currentCourseId   String?
+  activities        Activity[]
+  enrollments       Enrollment[]
+  progress          Progress[]
+  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  currentCourse     Course?      @relation(fields: [currentCourseId], references: [id])
+
+  @@map("students")
+}
+
+model Enrollment {
+  id              String           @id @default(cuid())
+  status          EnrollmentStatus @default(ACTIVE)
+  enrolledAt      DateTime         @default(now())
+  startedAt       DateTime?
+  completedAt     DateTime?
+  lastAccessedAt  DateTime?
+  progressPercent Int              @default(0) @db.SmallInt
+  timeSpent       Int              @default(0)
+  certificateUrl  String?
+  grade           String?
+  feedback        String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  studentId       String
+  courseId        String
+  course          Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  student         Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, courseId])
+  @@map("enrollments")
+}
+
+model Progress {
+  id          String    @id @default(cuid())
+  lessonId    String
+  lessonTitle String
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  timeSpent   Int       @default(0)
+  score       Int?      @db.SmallInt
+  attempts    Int       @default(0) @db.SmallInt
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+  @@map("progress")
+}
+
+model Activity {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  description String
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime     @default(now())
+  studentId   String
+  student     Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("activities")
+}
+
+enum CompanySize {
+  STARTUP
+  SMALL
+  MEDIUM
+  LARGE
+  ENTERPRISE
+}
+
+enum CourseCategory {
+  PROGRAMMING
+  DATA_SCIENCE
+  DESIGN
+  BUSINESS
+  MARKETING
+  LANGUAGE
+  CYBERSECURITY
+  DEVOPS
+  MOBILE
+  WEB
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  COMPLETED
+  PAUSED
+  DROPPED
+  EXPIRED
+}
+
+enum ActivityType {
+  LOGIN
+  LOGOUT
+  LESSON_STARTED
+  LESSON_COMPLETED
+  QUIZ_TAKEN
+  ASSIGNMENT_SUBMITTED
+  CERTIFICATE_EARNED
+  COURSE_ENROLLED
+  COURSE_COMPLETED
+  PROFILE_UPDATED
+}
